@@ -6,7 +6,7 @@ import { useState } from "react";
 import { UploadWidgetMinimizedButton } from "./upload-widget-minimized-button";
 
 export function UploadWidget() {
-  const [isWidgetOpen, setIsWidgetOpen] = useState(false);
+  const [isWidgetOpen, setIsWidgetOpen] = useState(true);
 
   return (
     <Collapsible.Root open={isWidgetOpen} onOpenChange={setIsWidgetOpen}>
