@@ -3,8 +3,7 @@ import * as Progress from "@radix-ui/react-progress";
 import { Download, ImageUp, Link2, RefreshCcw, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion } from "motion/react";
-import { useUploads } from "../store/uploads";
-import type { Upload } from "../store/uploads";
+import { type Upload, useUploads } from "../store/uploads";
 import { formatBytes } from "../utils/format-bytes";
 import { downloadUrl } from "../utils/download-url";
 
