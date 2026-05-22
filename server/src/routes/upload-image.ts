@@ -6,6 +6,8 @@ const MAXIMUM_FILE_SIZE_IN_BYTES = 1024 * 1024 * 4 // 4mb
 
 export async function uploadImageRoute(app: FastifyInstance) {
   app.post('/uploads', async (request, reply) => {
+
+ 
     const uploadedFile = await request.file({
       limits: { fileSize: MAXIMUM_FILE_SIZE_IN_BYTES },
     })
