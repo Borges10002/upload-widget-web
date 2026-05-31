@@ -1,1 +1,126 @@
+name: widget-web pipeline
 
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            server/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Lint web
+        working-directory: web
+        run: npm run lint
+
+      - name: Build web
+        working-directory: web
+        run: npm run build
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Build server
+        working-directory: server
+        run: npm run build
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web/dist
+          user_name: github-actions
+          user_email: github-actions[bot]@users.noreply.github.com
+
+      - name: Prepare PR notification
+        id: pr_notification
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number
+            const prTitle = context.payload.pull_request.title
+            const prUrl = context.payload.pull_request.html_url
+            const message = `New Pull Request: #${prNumber} - ${prTitle}\n${prUrl}`
+
+            core.setOutput('message', message)
+
+      - name: Send PR notification
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: ${{ steps.pr_notification.outputs.message }}
+          disable_web_page_preview: true
+
+      - name: Prepare push notification
+        id: push_notification
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commitMessage = context.payload.head_commit.message
+            const commitUrl = context.payload.head_commit.url
+            const message = `New Push to main: ${commitMessage}\n${commitUrl}`
+
+            core.setOutput('message', message)
+
+      - name: Send push notification
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: ${{ steps.push_notification.outputs.message }}
+          disable_web_page_preview: true
+
+      - name: Prepare deploy notification
+        id: deploy_notification
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commitMessage = context.payload.head_commit.message
+            const commitUrl = context.payload.head_commit.url
+            const message = `Deployed to GitHub Pages: ${commitMessage}\n${commitUrl}`
+
+            core.setOutput('message', message)
+
+      - name: Send deploy notification
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: ${{ steps.deploy_notification.outputs.message }}
+          disable_web_page_preview: true
