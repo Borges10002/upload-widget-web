@@ -1,0 +1,8 @@
+services:
+  server:
+    build: .
+    image: widget-server:v1
+    env_file:
+      - .env
+    ports:
+      - "3334:3333"
